@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `glpi_plugin_justificativas_entries` (
    `closing_date` DATE NOT NULL COMMENT 'Data de fechamento',
    `justification` TEXT NOT NULL COMMENT 'Justificativa',
    `operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',
+   `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',
    `user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',
    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
    `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,

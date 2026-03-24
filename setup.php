@@ -83,6 +83,7 @@ function plugin_install_justificativas() {
          . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
          . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
          . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
+         . "`operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',"
          . "`user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',"
          . "`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
          . "`updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,"
@@ -91,6 +92,10 @@ function plugin_install_justificativas() {
          . "KEY (`operation_id`)"
          . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
       $DB->query($query);
+   }
+
+   if ($DB->tableExists('glpi_plugin_justificativas_entries') && !$DB->fieldExists('glpi_plugin_justificativas_entries', 'operation_name')) {
+      $DB->query("ALTER TABLE `glpi_plugin_justificativas_entries` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
    }
 
    return true;

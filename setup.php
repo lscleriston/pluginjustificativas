@@ -4,6 +4,9 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
+require_once __DIR__ . '/inc/class.justificativas.php';
+require_once __DIR__ . '/inc/menu.class.php';
+
 /**
  * Plugin version information
  *
@@ -34,8 +37,8 @@ function plugin_init_justificativas() {
    $PLUGIN_HOOKS['csrf_compliant']['justificativas'] = true;
    $PLUGIN_HOOKS['config_page']['justificativas']   = 'front/config.php';
 
-   $PLUGIN_HOOKS['menu_toadd']['admin'] = [
-      'plugins' => ['title' => 'Justificativas', 'page' => 'plugins/justificativas/front/config.php'],
+   $PLUGIN_HOOKS['menu_toadd']['justificativas'] = [
+      'tools' => 'PluginJustificativasMenu',
    ];
 
    Plugin::registerClass('PluginJustificativas', ['addtabon' => 'Plugin']);

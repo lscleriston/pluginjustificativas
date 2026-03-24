@@ -6,6 +6,10 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginJustificativas extends CommonDBTM {
 
+   public static function getSectorizedDetails(): array {
+      return ['tools', self::class];
+   }
+
    static function getTable($classname = null) {
       return 'glpi_plugin_justificativas_entries';
    }

@@ -7,6 +7,22 @@ if (!defined('GLPI_ROOT')) {
 
 include_once GLPI_ROOT . '/inc/includes.php';
 
+if (!(int) Session::getLoginUserID()) {
+    Html::redirect(GLPI_ROOT . '/index.php');
+    exit;
+}
+
+$plugin = new Plugin();
+if (!$plugin->isActivated('justificativas')) {
+    Html::displayNotFoundError();
+    exit;
+}
+
+if (!Session::haveRight('justificativas', UPDATE)) {
+    Html::displayRightError();
+    exit;
+}
+
 global $DB;
 $errors = [];
 $message = '';
@@ -69,6 +85,3 @@ if (empty($operations)) {
     echo '</table>';
 }
 Html::footer();
-
-// redireciona para a mesma funcionalidade de importação
-include GLPI_ROOT . '/plugins/justificativas/front/index.php';

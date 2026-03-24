@@ -11,6 +11,10 @@ class PluginJustificativasMenu extends CommonGLPI {
    }
 
    public static function getMenuContent() {
+      if (!Session::haveRight('justificativas', READ)) {
+         return false;
+      }
+
       $menu = [
          'title' => self::getMenuName(),
          'page'  => Plugin::getWebDir('justificativas') . '/front/index.php',
@@ -32,6 +36,10 @@ class PluginJustificativasMenu extends CommonGLPI {
             ],
          ],
       ];
+
+      if (!Session::haveRight('justificativas', UPDATE)) {
+         unset($menu['options']['config']);
+      }
 
       return $menu;
    }

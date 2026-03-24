@@ -6,6 +6,7 @@ if (!defined('GLPI_ROOT')) {
 
 require_once __DIR__ . '/inc/class.justificativas.php';
 require_once __DIR__ . '/inc/menu.class.php';
+require_once __DIR__ . '/inc/profile.class.php';
 
 /**
  * Plugin version information
@@ -42,6 +43,9 @@ function plugin_init_justificativas() {
    ];
 
    Plugin::registerClass('PluginJustificativas', ['addtabon' => 'Plugin']);
+   Plugin::registerClass('PluginJustificativasProfile', ['addtabon' => ['Profile']]);
+
+   PluginJustificativasProfile::initProfile();
 }
 
 function plugin_justificativas_init() {
@@ -100,6 +104,8 @@ function plugin_install_justificativas() {
    if ($DB->tableExists('glpi_plugin_justificativas_entries') && !$DB->fieldExists('glpi_plugin_justificativas_entries', 'operation_name')) {
       $DB->query("ALTER TABLE `glpi_plugin_justificativas_entries` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
    }
+
+   PluginJustificativasProfile::initProfile();
 
    return true;
 }

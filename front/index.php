@@ -16,6 +16,17 @@ if (!(int) Session::getLoginUserID()) {
     exit;
 }
 
+$plugin = new Plugin();
+if (!$plugin->isActivated('justificativas')) {
+    Html::displayNotFoundError();
+    exit;
+}
+
+if (!Session::haveRight('justificativas', READ)) {
+    Html::displayRightError();
+    exit;
+}
+
 global $DB;
 
 // Debug de PHP para evitar tela branca

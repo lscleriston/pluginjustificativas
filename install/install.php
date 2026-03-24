@@ -33,4 +33,4 @@ foreach ($statements as $statement) {
    $DB->query($statement);
 }
 
-echo "Table glpi_plugin_justificativas_entries created/verified.\n";
+echo "Tables glpi_plugin_justificativas_tickets, glpi_plugin_justificativas_ligacoes, glpi_plugin_justificativas_zabbix created/verified.\n";

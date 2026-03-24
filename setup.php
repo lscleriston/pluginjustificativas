@@ -83,26 +83,36 @@ function plugin_install_justificativas() {
       $DB->query($query);
    }
 
-   if (!$DB->tableExists('glpi_plugin_justificativas_entries')) {
-      $query = "CREATE TABLE `glpi_plugin_justificativas_entries` ("
-         . "`id` INT(11) NOT NULL AUTO_INCREMENT,"
-         . "`ticket_id` INT(11) NOT NULL COMMENT 'Número do chamado',"
-         . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
-         . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
-         . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
-         . "`operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',"
-         . "`user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',"
-         . "`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
-         . "`updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,"
-         . "PRIMARY KEY (`id`),"
-         . "KEY (`ticket_id`),"
-         . "KEY (`operation_id`)"
-         . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-      $DB->query($query);
-   }
+   $tables = [
+      'glpi_plugin_justificativas_tickets' => 'ticket_id',
+      'glpi_plugin_justificativas_ligacoes' => 'ligacao_id',
+      'glpi_plugin_justificativas_zabbix' => 'evento_id'
+   ];
 
-   if ($DB->tableExists('glpi_plugin_justificativas_entries') && !$DB->fieldExists('glpi_plugin_justificativas_entries', 'operation_name')) {
-      $DB->query("ALTER TABLE `glpi_plugin_justificativas_entries` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
+   foreach ($tables as $tableName => $foreignKey) {
+      if (!$DB->tableExists($tableName)) {
+         if ($tableName === 'glpi_plugin_justificativas_tickets' && $DB->tableExists('glpi_plugin_justificativas_entries')) {
+            $DB->query("RENAME TABLE `glpi_plugin_justificativas_entries` TO `$tableName`");
+         } else {
+            $query = "CREATE TABLE `$tableName` ("
+               . "`id` INT(11) NOT NULL AUTO_INCREMENT,"
+               . "`$foreignKey` INT(11) NOT NULL COMMENT 'Referência de $foreignKey',"
+               . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
+               . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
+               . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
+               . "`operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',"
+               . "`user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',"
+               . "`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+               . "`updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,"
+               . "PRIMARY KEY (`id`),"
+               . "KEY (`$foreignKey`),"
+               . "KEY (`operation_id`)"
+               . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+            $DB->query($query);
+         }
+      } elseif (!$DB->fieldExists($tableName, 'operation_name')) {
+         $DB->query("ALTER TABLE `$tableName` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
+      }
    }
 
    PluginJustificativasProfile::initProfile();
@@ -119,8 +129,16 @@ function plugin_justificativas_install() {
 function plugin_uninstall_justificativas() {
    global $DB;
 
-   if ($DB->tableExists('glpi_plugin_justificativas_entries')) {
-      $DB->query("DROP TABLE `glpi_plugin_justificativas_entries`");
+   $tables = [
+      'glpi_plugin_justificativas_tickets',
+      'glpi_plugin_justificativas_ligacoes',
+      'glpi_plugin_justificativas_zabbix'
+   ];
+
+   foreach ($tables as $tableName) {
+      if ($DB->tableExists($tableName)) {
+         $DB->query("DROP TABLE `$tableName`");
+      }
    }
 
    if ($DB->tableExists('glpi_plugin_justificativas_operations')) {

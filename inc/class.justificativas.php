@@ -11,7 +11,7 @@ class PluginJustificativas extends CommonDBTM {
    }
 
    static function getTable($classname = null) {
-      return 'glpi_plugin_justificativas_entries';
+      return 'glpi_plugin_justificativas_tickets';
    }
 
    static function getTypeName($nb = 0) {

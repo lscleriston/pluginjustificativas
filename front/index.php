@@ -346,12 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             continue;
                         }
 
-                        if (empty($operation_id)) {
-                            $skipped++;
-                            $skipReasons[] = sprintf(__('Linha %d ignorada: operação não definida.'), $line);
-                            continue;
-                        }
-
+                        // Operação é opcional; se não definida, gravamos sem operação
                         $insertData = [
                             $entryKey => $entryId,
                             'closing_date' => $closing_date,

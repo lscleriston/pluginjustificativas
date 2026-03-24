@@ -150,23 +150,39 @@ if (!$DB->tableExists('glpi_plugin_justificativas_operations')) {
         . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
-if (!$DB->tableExists('glpi_plugin_justificativas_entries')) {
-    $DB->query("CREATE TABLE `glpi_plugin_justificativas_entries` ("
-        . "`id` INT(11) NOT NULL AUTO_INCREMENT,"
-        . "`ticket_id` INT(11) NOT NULL COMMENT 'Número do chamado',"
-        . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
-        . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
-        . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
-        . "`operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',"
-        . "`user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',"
-        . "`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
-        . "`updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,"
-        . "PRIMARY KEY (`id`),"
-        . "KEY (`ticket_id`),"
-        . "KEY (`operation_id`)"
-        . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} elseif (!$DB->fieldExists('glpi_plugin_justificativas_entries', 'operation_name')) {
-    $DB->query("ALTER TABLE `glpi_plugin_justificativas_entries` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
+$justifTypes = [
+    'tickets' => ['table' => 'glpi_plugin_justificativas_tickets', 'key' => 'ticket_id', 'label' => __('Ticket')],
+    'ligacoes' => ['table' => 'glpi_plugin_justificativas_ligacoes', 'key' => 'ligacao_id', 'label' => __('Ligações')],
+    'zabbix' => ['table' => 'glpi_plugin_justificativas_zabbix', 'key' => 'evento_id', 'label' => __('Eventos')],
+];
+
+$selectedJustifType = $_POST['justif_type'] ?? 'tickets';
+if (!isset($justifTypes[$selectedJustifType])) {
+    $selectedJustifType = 'tickets';
+}
+
+$entriesTable = $justifTypes[$selectedJustifType]['table'];
+$entryKey = $justifTypes[$selectedJustifType]['key'];
+
+foreach ($justifTypes as $type => $meta) {
+    if (!$DB->tableExists($meta['table'])) {
+        $DB->query("CREATE TABLE `{$meta['table']}` ("
+            . "`id` INT(11) NOT NULL AUTO_INCREMENT,"
+            . "`{$meta['key']}` INT(11) NOT NULL COMMENT 'Referência de {$meta['key']}',"
+            . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
+            . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
+            . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
+            . "`operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada',"
+            . "`user_id` INT(11) NULL DEFAULT NULL COMMENT 'Usuário que importou',"
+            . "`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+            . "`updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,"
+            . "PRIMARY KEY (`id`),"
+            . "KEY (`{$meta['key']}`),"
+            . "KEY (`operation_id`)"
+            . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } elseif (!$DB->fieldExists($meta['table'], 'operation_name')) {
+        $DB->query("ALTER TABLE `{$meta['table']}` ADD COLUMN `operation_name` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Nome da operação associada' AFTER `operation_id`");
+    }
 }
 
 $errors = [];
@@ -284,8 +300,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
 
                     foreach ($rows as $row) {
                         $line++;
-                        if ($line === 1 && (stripos(implode(' ', $row), 'ticket') !== false || stripos(implode(' ', $row), 'chamado') !== false)) {
-                            continue;
+                        if ($line === 1) {
+                            $headerLine = implode(' ', $row);
+                            if (stripos($headerLine, 'ticket') !== false || stripos($headerLine, 'chamado') !== false || stripos($headerLine, 'ligacao') !== false || stripos($headerLine, 'evento') !== false) {
+                                continue;
+                            }
                         }
                         if (count($row) < 3) {
                             $skipped++;
@@ -293,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             continue;
                         }
 
-                        $ticket_id = (int) $row[0];
+                        $entryId = (int) $row[0];
                         $closing_date = plugin_justificativas_parse_date($row[1]);
                         $justification = trim($row[2]);
                         $rowOperation = trim($row[3] ?? '');
@@ -315,9 +334,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             $operation_name = $operations[$operation_id] ?? null;
                         }
 
-                        if ($ticket_id <= 0 || $justification === '') {
+                        if ($entryId <= 0 || $justification === '') {
                             $skipped++;
-                            $skipReasons[] = sprintf(__('Linha %d ignorada: ticket ou justificativa inválidos.'), $line);
+                            $skipReasons[] = sprintf(__('Linha %d ignorada: %s ou justificativa inválidos.'), $line, $justifTypes[$selectedJustifType]['label']);
                             continue;
                         }
 
@@ -333,8 +352,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             continue;
                         }
 
-                        $DB->insert('glpi_plugin_justificativas_entries', [
-                            'ticket_id' => $ticket_id,
+                        $insertData = [
+                            $entryKey => $entryId,
                             'closing_date' => $closing_date,
                             'justification' => $justification,
                             'operation_id' => $operation_id,
@@ -342,7 +361,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             'user_id' => Session::getLoginUserID(),
                             'created_at' => date('Y-m-d H:i:s'),
                             'updated_at' => date('Y-m-d H:i:s'),
-                        ]);
+                        ];
+
+                        $DB->insert($entriesTable, $insertData);
 
                         if ($DB->affectedRows() <= 0) {
                             $skipped++;
@@ -398,6 +419,16 @@ echo '<form method="post" enctype="multipart/form-data" class="tab_cadre">';
 echo '<table class="tab_cadre_fixe">';
 echo '<tr><th colspan="2">'.__('Importar justificativas').'</th></tr>';
 
+echo '<tr><td><label for="justif_type">'.__('Tipo de justificativa').'</label></td>';
+
+echo '<td><select name="justif_type" id="justif_type">';
+foreach ($justifTypes as $type => $meta) {
+    $selectedType = ($selectedJustifType === $type) ? ' selected' : '';
+    echo '<option value="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'"'.$selectedType.'>'.htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8').'</option>';
+}
+
+echo '</select></td></tr>';
+
 echo '<tr><td><label for="operation_id">'.__('Operação').'</label></td>';
 
 echo '<td><select name="operation_id" id="operation_id">';
@@ -412,7 +443,7 @@ echo '<tr><td><label for="justificativa_file">'.__('Arquivo').'</label></td>';
 
 echo '<td><input type="file" name="justificativa_file" id="justificativa_file" size="60" /></td></tr>';
 
-echo '<tr><td colspan="2">' . __('Selecione um arquivo CSV ou Excel (.xls/.xlsx) com colunas: ticket, data de fechamento, justificativa e opcionalmente operação (id ou nome).') . '</td></tr>';
+echo '<tr><td colspan="2">' . __('Selecione um arquivo CSV ou Excel (.xls/.xlsx) com colunas: ID (ticket/ligação/evento), data de fechamento, justificativa e opcionalmente operação (id ou nome).') . '</td></tr>';
 
 echo '<tr><td colspan="2" class="center"><button type="submit" name="import_justificativas" class="submit">'.__('Importar').'</button></td></tr>';
 

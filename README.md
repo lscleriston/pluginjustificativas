@@ -38,9 +38,10 @@ Este plugin adiciona importação de justificativas para chamados no GLPI, permi
 ### Importar justificativas
 
 1. Abra `Ferramentas > Justificativas > Importar justificativas`.
-2. Selecione operação padrão (opcional) e arquivo CSV/XLSX.
-3. CSV esperados: `ticket_id`, `closing_date`, `justification`, `operation` (opcional).
-4. Execute importação. O plugin informará quantas linhas importadas e puladas.
+2. Escolha o tipo de justificativa (Ticket, Ligações ou Eventos).
+3. Selecione operação padrão (opcional) e arquivo CSV/XLSX.
+4. CSV esperados: `id` (ticket/ligação/evento conforme tipo), `closing_date`, `justification`, `operation` (opcional).
+5. Execute importação. O plugin informará quantas linhas importadas e puladas.
 
 ### Campos gravados (tabela `glpi_plugin_justificativas_entries`)
 

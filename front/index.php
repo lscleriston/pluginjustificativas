@@ -448,7 +448,7 @@ echo '<tr><td><label for="justificativa_file">'.__('Arquivo').'</label></td>';
 
 echo '<td><input type="file" name="justificativa_file" id="justificativa_file" size="60" /></td></tr>';
 
-echo '<tr><td colspan="2">' . __('Selecione um arquivo CSV ou Excel (.xls/.xlsx) com colunas: ID (ticket/ligação/evento), data de fechamento, justificativa e opcionalmente operação (id ou nome).') . '</td></tr>';
+echo '<tr><td colspan="2">' . __('Selecione um arquivo CSV (.xls/.xlsx) com colunas: ID (ticket/ligação/evento), data de fechamento, justificativa e opcionalmente operação (id ou nome).') . '</td></tr>';
 
 echo '<tr><td colspan="2" class="center"><button type="submit" name="import_justificativas" class="submit">'.__('Importar').'</button></td></tr>';
 

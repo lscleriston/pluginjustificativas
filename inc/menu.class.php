@@ -11,7 +11,9 @@ class PluginJustificativasMenu extends CommonGLPI {
    }
 
    public static function getMenuContent() {
-      if (!Session::haveRight('justificativas', READ)) {
+      // Permite acesso a administradores de configurações por enquanto;
+      // se o direito do plugin ainda não estiver definido, evita bloqueio total.
+      if (!Session::haveRight('justificativas', READ) && !Session::haveRight('config', UPDATE)) {
          return false;
       }
 

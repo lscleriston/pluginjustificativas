@@ -18,7 +18,7 @@ if (!$plugin->isActivated('justificativas')) {
     exit;
 }
 
-if (!Session::haveRight('justificativas', UPDATE)) {
+if (!Session::haveRight('justificativas', UPDATE) && !Session::haveRight('config', UPDATE)) {
     Html::displayRightError();
     exit;
 }

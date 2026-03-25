@@ -14,11 +14,11 @@ Este plugin adiciona importação de justificativas para chamados no GLPI, permi
 - `inc/profile.class.php`: aba do perfil com direitos do plugin
 - `front/index.php`: importação de justificativas e UI principal
 - `front/config.php`: cadastro/listagem de operações
-- `install/mysql/plugin_justificativas_entries.sql`: esquema de tabelas (tickets/ligacoes/zabbix)
+- `install/mysql/plugin_justificativas_entries.sql`: esquema de tabelas (tickets/zabbix/telefonia_atendida/telefonia_perdida)
 
 ## Requisitos
 
-- GLPI 10.x compatível
+- GLPI 11.0.0 ou superior
 - PHP com extensões padrão (PDO, MbString, etc.)
 - Para XLS/XLSX, `phpoffice/phpspreadsheet` opcional (se não instalado só CSV)
 
@@ -43,9 +43,12 @@ Este plugin adiciona importação de justificativas para chamados no GLPI, permi
 4. CSV esperados: `id` (ticket/evento/telefonia conforme tipo), `closing_date`, `justification`, `operation` (opcional).
 5. Execute importação. O plugin informará quantas linhas importadas e puladas.
 
-### Campos gravados (tabela `glpi_plugin_justificativas_entries`)
+### Campos gravados (tabelas de justificativas)
 
-- `ticket_id`
+- `ticket_id` (em `glpi_plugin_justificativas_tickets`)
+- `evento_id` (em `glpi_plugin_justificativas_zabbix`)
+- `telefonia_atendida_id` (em `glpi_plugin_justificativas_telefonia_atendida`)
+- `telefonia_perdida_id` (em `glpi_plugin_justificativas_telefonia_perdida`)
 - `closing_date`
 - `justification`
 - `operation_id`

@@ -22,7 +22,8 @@ if (!$plugin->isActivated('justificativas')) {
     exit;
 }
 
-if (!Session::haveRight('justificativas', READ)) {
+if (!Session::haveRight('justificativas', READ) && !Session::haveRight('config', UPDATE)) {
+    // fallback para usuário admin que ainda não configurou direitos no perfil
     Html::displayRightError();
     exit;
 }
@@ -152,8 +153,9 @@ if (!$DB->tableExists('glpi_plugin_justificativas_operations')) {
 
 $justifTypes = [
     'tickets' => ['table' => 'glpi_plugin_justificativas_tickets', 'key' => 'ticket_id', 'label' => __('Ticket')],
-    'ligacoes' => ['table' => 'glpi_plugin_justificativas_ligacoes', 'key' => 'ligacao_id', 'label' => __('Ligações')],
     'zabbix' => ['table' => 'glpi_plugin_justificativas_zabbix', 'key' => 'evento_id', 'label' => __('Eventos')],
+    'telefonia_atendida' => ['table' => 'glpi_plugin_justificativas_telefonia_atendida', 'key' => 'telefonia_atendida_id', 'label' => __('Telefonia Atendida')],
+    'telefonia_perdida' => ['table' => 'glpi_plugin_justificativas_telefonia_perdida', 'key' => 'telefonia_perdida_id', 'label' => __('Telefonia Perdida')],
 ];
 
 $selectedJustifType = $_POST['justif_type'] ?? 'tickets';
@@ -166,9 +168,10 @@ $entryKey = $justifTypes[$selectedJustifType]['key'];
 
 foreach ($justifTypes as $type => $meta) {
     if (!$DB->tableExists($meta['table'])) {
+        $keyType = in_array($type, ['telefonia_atendida', 'telefonia_perdida'], true) ? 'VARCHAR(255)' : 'INT(11)';
         $DB->query("CREATE TABLE `{$meta['table']}` ("
             . "`id` INT(11) NOT NULL AUTO_INCREMENT,"
-            . "`{$meta['key']}` INT(11) NOT NULL COMMENT 'Referência de {$meta['key']}',"
+            . "`{$meta['key']}` $keyType NOT NULL COMMENT 'Referência de {$meta['key']}',"
             . "`closing_date` DATE NOT NULL COMMENT 'Data de fechamento',"
             . "`justification` TEXT NOT NULL COMMENT 'Justificativa',"
             . "`operation_id` INT(11) NULL DEFAULT NULL COMMENT 'Operação associada',"
@@ -280,16 +283,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                 }
 
                 if (empty($errors)) {
-                        $hasRowOperation = false;
-                        foreach ($rows as $row) {
-                            if (trim($row[3] ?? '') !== '') {
-                                $hasRowOperation = true;
-                                break;
-                            }
-                        }
-
-                        if ($selectedOperationId <= 0 && !empty($operations) && !$hasRowOperation) {
-                            $errors[] = __('Nenhuma operação selecionada e o arquivo não tem operação em colunas. Selecione uma operação ou preencha a 4ª coluna do arquivo.');
+                        // Se a operação não foi selecionada, use a primeira disponível como valor padrão
+                        if ($selectedOperationId <= 0 && !empty($operations)) {
+                            $selectedOperationId = array_key_first($operations);
                         }
                     }
 
@@ -312,7 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             continue;
                         }
 
-                        $entryId = (int) $row[0];
+                        $entryId = trim($row[0]);
                         $closing_date = plugin_justificativas_parse_date($row[1]);
                         $justification = trim($row[2]);
                         $rowOperation = trim($row[3] ?? '');
@@ -334,7 +330,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_justificativas
                             $operation_name = $operations[$operation_id] ?? null;
                         }
 
-                        if ($entryId <= 0 || $justification === '') {
+                        $entryKeyValid = true;
+                        if (in_array($selectedJustifType, ['tickets', 'ligacoes', 'zabbix'], true)) {
+                            if (!is_numeric($entryId) || (int) $entryId <= 0) {
+                                $entryKeyValid = false;
+                            } else {
+                                $entryId = (int) $entryId;
+                            }
+                        } else {
+                            $entryId = (string) $entryId;
+                            if ($entryId === '') {
+                                $entryKeyValid = false;
+                            }
+                        }
+
+                        if (!$entryKeyValid || $justification === '') {
                             $skipped++;
                             $skipReasons[] = sprintf(__('Linha %d ignorada: %s ou justificativa inválidos.'), $line, $justifTypes[$selectedJustifType]['label']);
                             continue;
